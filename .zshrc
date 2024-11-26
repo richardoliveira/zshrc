@@ -6,118 +6,359 @@ plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
 
-alias git-create-branch='f() { 
-    if [[ $# -ne 2 ]]; then
-        echo "Objetivo: Criar uma nova branch a partir da branch base, atualizando-a se necessário.";
-        echo "Uso: git-create <branch_base> <nova_branch>";
+alias python='python3'
+
+ccm() {
+    git diff | cody chat --stdin -m "Write a commit message for this diff"
+}
+
+# Adicionar ao arquivo ~/.zshrc ou ~/.bashrc
+
+# 1. Criar branch a partir de outra com pull automático
+git_create_branch() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gcb <branch_origem> <nova_branch>"
+        echo "Exemplo: gcb main feature/nova-funcionalidade"
+        echo "Cria uma nova branch a partir de outra, fazendo pull automático da branch de origem"
+        return 0
+    fi
+    if [ "$#" -ne 2 ]; then
+        echo "Uso: gcb <branch_origem> <nova_branch>"
+        echo "Use 'gcb -h' para mais informações"
+        return 1
+    fi
+    git checkout "$1" && \
+    git pull origin "$1" && \
+    git checkout -b "$2"
+}
+alias gcb='git_create_branch'
+
+# 2. Apagar branch local
+git_delete_branch_local() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gdbl <nome_da_branch>"
+        echo "Exemplo: gdbl feature/old-branch"
+        echo "Apaga uma branch local (force delete)"
+        return 0
+    fi
+    if [ "$#" -ne 1 ]; then
+        echo "Uso: gdbl <nome_da_branch>"
+        echo "Use 'gdbl -h' para mais informações"
+        return 1
+    fi
+    git branch -D "$1"
+}
+alias gdbl='git_delete_branch_local'
+
+# 3. Apagar branch remota e local com confirmação
+git_delete_branch_remote() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gbdr <nome_da_branch>"
+        echo "Exemplo: gbdr feature/old-branch"
+        echo "Apaga uma branch tanto localmente quanto remotamente (após confirmação)"
+        return 0
+    fi
+    if [ "$#" -ne 1 ]; then
+        echo "Uso: gbdr <nome_da_branch>"
+        echo "Use 'gbdr -h' para mais informações"
+        return 1
+    fi
+    read -p "Tem certeza que deseja apagar a branch $1 remotamente? (s/N) " confirm
+    if [[ $confirm =~ ^[Ss]$ ]]; then
+        git push origin --delete "$1" && \
+        git branch -D "$1" && \
+        echo "Branch $1 removida localmente e remotamente"
     else
-        if [[ $(git rev-parse --abbrev-ref HEAD) != $1 ]]; then
-            git checkout $1;
-            git pull origin $1;
-        fi;
-        git checkout -b $2;
-        unset -f f;
-    fi;
-}; f'
+        echo "Operação cancelada"
+    fi
+}
+alias gbdr='git_delete_branch_remote'
 
-alias git-merge-branch='f() { 
-    if [[ $# -ne 2 ]]; then
-        echo "Objetivo: Atualizar e fazer merge da branch de origem para a branch de destino.";
-        echo "Uso: git-merge <branch_origem> <branch_destino>";
+# 4. Facilitar add, commit e amend
+git_add_commit() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gac <mensagem_do_commit>"
+        echo "Exemplo: gac \"feat: adiciona nova funcionalidade\""
+        echo "Adiciona todas as alterações e faz commit com a mensagem especificada"
+        echo ""
+        echo "Outros aliases relacionados:"
+        echo "gaca  - Adiciona alterações e faz commit --amend (permite editar mensagem)"
+        echo "gacan - Adiciona alterações e faz commit --amend sem editar mensagem"
+        return 0
+    fi
+    if [ "$#" -lt 1 ]; then
+        echo "Uso: gac <mensagem_do_commit>"
+        echo "Use 'gac -h' para mais informações"
+        return 1
+    fi
+    git add . && git commit -m "$*"
+}
+alias gac='git_add_commit'
+
+git_add_commit_amend() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gaca"
+        echo "Adiciona todas as alterações e faz commit --amend (abre editor para editar mensagem)"
+        return 0
+    fi
+    git add . && git commit --amend
+}
+alias gaca='git_add_commit_amend'
+
+git_add_commit_amend_no_edit() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gacan"
+        echo "Adiciona todas as alterações e faz commit --amend mantendo a mensagem anterior"
+        return 0
+    fi
+    git add . && git commit --amend --no-edit
+}
+alias gacan='git_add_commit_amend_no_edit'
+
+# 5. Rebase interativo com pull automático
+git_rebase_interactive() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gri <branch_base>"
+        echo "Exemplo: gri main"
+        echo "Faz checkout na branch base, puxa as alterações,"
+        echo "retorna para a branch atual e inicia rebase interativo"
+        return 0
+    fi
+    if [ "$#" -ne 1 ]; then
+        echo "Uso: gri <branch_base>"
+        echo "Use 'gri -h' para mais informações"
+        return 1
+    fi
+    current_branch=$(git symbolic-ref --short HEAD)
+    git checkout "$1" && \
+    git pull origin "$1" && \
+    git checkout "$current_branch" && \
+    git rebase -i "$1"
+}
+alias gri='git_rebase_interactive'
+
+# 6. Fetch com prune
+git_fetch() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gf"
+        echo "Atualiza referências remotas e remove branches obsoletas (git fetch -p)"
+        return 0
+    fi
+    git fetch -p
+}
+alias gf='git_fetch'
+
+# 7. Listar branches locais
+git_list_local() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gll"
+        echo "Lista todas as branches locais"
+        echo "Opções:"
+        echo "  -v    Mostra último commit de cada branch"
+        return 0
+    fi
+    if [ "$1" = "-v" ]; then
+        git branch -v
     else
-        echo "Atualizando a branch $1";
-        git checkout $1;
-        git pull origin $1;
+        git branch
+    fi
+}
+alias gll='git_list_local'
 
-        echo "Atualizando a branch $2";
-        git checkout $2;
-        git pull origin $2;
-
-        echo "Fazendo merge da branch $1 para $2";
-        git checkout $2;
-        git merge $1;
-        unset -f f;
-    fi;
-}; f'
-
-alias git-remote='f() { 
-    if [[ $# -ne 0 ]]; then
-        echo "Objetivo: Identificar o endereço remoto de um repositório Git.";
-        echo "Uso: git-remote";
+# 8. Listar branches remotas
+git_list_remote() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: glr"
+        echo "Lista todas as branches no repositório remoto"
+        echo "Opções:"
+        echo "  -v    Mostra último commit de cada branch"
+        return 0
+    fi
+    if [ "$1" = "-v" ]; then
+        git branch -r -v
     else
-        remote=$(git remote get-url --all origin 2>/dev/null)
-        if [ -z "$remote" ]; then
-            echo "Erro: O repositório não tem um remoto chamado 'origin' configurado."
-        else
-            echo "Endereço remoto do repositório:"
-            echo "$remote"
+        git branch -r
+    fi
+}
+alias glr='git_list_remote'
+
+# 9. Verificar branches locais que não existem no remoto
+git_check_cleanup() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gcc"
+        echo "Lista branches locais que não existem no repositório remoto"
+        echo "Útil para identificar branches que podem ser removidas localmente"
+        echo "Atualiza primeiro o fetch para garantir informações atualizadas"
+        return 0
+    fi
+    
+    echo "Atualizando referências remotas..."
+    git fetch -p
+    
+    echo -e "\nBranches que existem apenas localmente:"
+    for branch in $(git branch --format "%(refname:short)"); do
+        if ! git branch -r | grep -q "origin/$branch$"; then
+            # Obtém a data do último commit da branch
+            last_commit_date=$(git log -1 --format="%ai" "$branch" 2>/dev/null)
+            if [ -n "$last_commit_date" ]; then
+                echo -e "$branch\t(Último commit: $last_commit_date)"
+            else
+                echo "$branch"
+            fi
         fi
-        unset -f f;
-    fi;
-}; f'
+    done
+}
+alias gcc='git_check_cleanup'
 
-alias git-change-remote='f() { 
-    if [[ $# -ne 1 ]]; then
-        echo "Objetivo: Trocar o endereço remoto do repositório Git.";
-        echo "Uso: git-change-remote <novo_endereco>";
+# 10. Lista todas as branches (locais e remotas)
+git_log_all() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gl [-v]"
+        echo "Lista todas as branches locais e remotas em um único comando"
+        echo ""
+        echo "Por padrão mostra:"
+        echo "  - Branches locais (prefixo: nenhum)"
+        echo "  - Branches remotas (prefixo: origin/)"
+        echo ""
+        echo "Opções:"
+        echo "  -v    Mostra último commit de cada branch"
+        echo ""
+        echo "Nota: Uma mesma branch pode aparecer duas vezes se existir local e remotamente"
+        echo "      Para ver apenas branches locais use: gll"
+        echo "      Para ver apenas branches remotas use: glr"
+        return 0
+    fi
+    if [ "$1" = "-v" ]; then
+        echo "=== Branches Locais ==="
+        git branch -v
+        echo -e "\n=== Branches Remotas ==="
+        git branch -r -v
     else
-        novo_endereco=$1
-        git remote set-url origin $novo_endereco
-        echo "Endereço remoto alterado para: $novo_endereco"
-        unset -f f;
-    fi;
-}; f'
+        echo "=== Branches Locais ==="
+        git branch
+        echo -e "\n=== Branches Remotas ==="
+        git branch -r
+    fi
+}
+alias gl='git_log_all'
 
-alias git-delete-branch='f() { 
-    if [[ $# -ne 1 ]]; then
-        echo "Objetivo: Deletar uma branch local e remota.";
-        echo "Uso: git-delete-branch <nome_da_branch>";
+# 11. Comandos básicos do git
+git_status() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gs"
+        echo "Mostra o status do repositório git (git status)"
+        return 0
+    fi
+    git status
+}
+alias gs='git_status'
+
+git_push() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gp [branch]"
+        echo "Exemplo: gp ou gp main"
+        echo "Envia alterações para o repositório remoto"
+        return 0
+    fi
+    if [ "$#" -eq 0 ]; then
+        git push
     else
-        branch_name=$1
+        git push origin "$1"
+    fi
+}
+alias gp='git_push'
 
-        echo "Deletando a branch local: $branch_name";
-        git branch -d $branch_name;
-
-        echo "Deletando a branch remota: $branch_name";
-        git push origin --delete $branch_name;
-
-        unset -f f;
-    fi;
-}; f'
-
-alias git-delete-branch-local='f() { 
-    if [[ $# -ne 1 ]]; then
-        echo "Objetivo: Deletar uma branch local.";
-        echo "Uso: git-delete-branch <nome_da_branch>";
+git_pull() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gpl [branch]"
+        echo "Exemplo: gpl ou gpl main"
+        echo "Puxa alterações do repositório remoto"
+        return 0
+    fi
+    if [ "$#" -eq 0 ]; then
+        git pull
     else
-        branch_name=$1
+        git pull origin "$1"
+    fi
+}
+alias gpl='git_pull'
 
-        echo "Deletando a branch local: $branch_name";
-        git branch -d $branch_name;
+git_checkout() {
+    if [ "$1" = "-h" ]; then
+        echo "Uso: gco <branch>"
+        echo "Exemplo: gco main"
+        echo "Muda para a branch especificada"
+        return 0
+    fi
+    if [ "$#" -ne 1 ]; then
+        echo "Uso: gco <branch>"
+        echo "Use 'gco -h' para mais informações"
+        return 1
+    fi
+    git checkout "$1"
+}
+alias gc='git_checkout'
 
-        unset -f f;
-    fi;
-}; f'
-
-alias git-link-remote='f() { 
-    if [[ $# -ne 1 ]]; then
-        echo "Objetivo: Vincular um repositório local a um repositório remoto no GitHub.";
-        echo "Uso: git-vincular-remoto <url_do_repositorio>";
+# Help geral - lista todos os comandos disponíveis
+git_help() {
+    if [ "$1" = "-v" ]; then
+        echo "=== Git Aliases - Ajuda Detalhada ==="
+        echo ""
+        echo "Gerenciamento de Branches:"
+        echo "  gcb  <origem> <nova>   - Cria branch nova a partir de outra (com pull)"
+        echo "  gc   <branch>          - Muda para a branch especificada"
+        echo "  gdbl <branch>          - Deleta branch local (com confirmação)"
+        echo "  gbdr <branch>          - Deleta branch remota e local (com confirmação)"
+        echo ""
+        echo "Listagem e Verificação:"
+        echo "  gll                    - Lista branches locais"
+        echo "  glr                    - Lista branches remotas"
+        echo "  gl                     - Lista todas as branches (locais e remotas)"
+        echo "  gcc                    - Verifica branches que só existem localmente"
+        echo ""
+        echo "Commits e Updates:"
+        echo "  gac  <mensagem>        - Git add e commit"
+        echo "  gaca                   - Git add e commit amend (edita mensagem)"
+        echo "  gacan                  - Git add e commit amend (mantém mensagem)"
+        echo "  gri  <branch>          - Rebase interativo com pull automático"
+        echo ""
+        echo "Comandos Básicos:"
+        echo "  gf                     - Fetch com prune"
+        echo "  gs                     - Status"
+        echo "  gp  [branch]           - Push (opcional: especificar branch)"
+        echo "  gpl [branch]           - Pull (opcional: especificar branch)"
+        echo ""
+        echo "Para ajuda detalhada de cada comando, use: <comando> -h"
+        echo "Exemplo: gcb -h"
     else
-        repo_url=$1
-
-        git init
-        git remote add origin $repo_url
-        git add .
-        git commit -m "feat(projeto): Primeiro commit"
-        git branch -M main
-        git push -u origin main
-
-        unset -f f;
-    fi;
-}; f'
+        echo "=== Git Aliases - Comandos Disponíveis ==="
+        echo ""
+        echo "Branches:"
+        echo "  gcb  - Criar branch    | gco  - Checkout"
+        echo "  gdbl - Deletar local   | gbdr - Deletar remota"
+        echo ""
+        echo "Listagem:"
+        echo "  gll  - Listar locais   | glr  - Listar remotas"
+        echo "  gl   - Listar todas    | gcc  - Verificar locais"
+        echo ""
+        echo "Commits:"
+        echo "  gac  - Add e commit    | gaca - Commit amend"
+        echo "  gacan- Amend no edit   | gri  - Rebase interativo"
+        echo ""
+        echo "Básicos:"
+        echo "  gf   - Fetch           | gs   - Status"
+        echo "  gp   - Push            | gpl  - Pull"
+        echo ""
+        echo "Use 'g -v' para ajuda detalhada"
+        echo "Use '<comando> -h' para ajuda específica"
+    fi
+}
+alias g='git_help'
 
 export PATH=$PATH:~/.local/bin
+export PATH=$PATH:~/.dotnet/tools
+export PATH="$PATH:/opt/mssql-tools/bin"
+export PATH="$PATH:/opt/mssql-tools18/bin"
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -131,3 +372,5 @@ case ":$PATH:" in
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 # pnpm end
+
+export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
