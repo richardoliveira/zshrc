@@ -375,5 +375,3 @@ esac
 
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-export SRC_ENDPOINT="https://sourcegraph.com"
-export SRC_ACCESS_TOKEN="sgp_fd1b4edb60bf82b8_e80f78894aa5cf16b19d14b084472500f748b956"
