@@ -7,6 +7,8 @@ plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 source $ZSH/oh-my-zsh.sh
 
 alias python='python3'
+alias wportal='cd /mnt/e/portal'
+alias uportal='cd portal/'
 
 ccm() {
     git diff | cody chat --stdin -m "Write a commit message for this diff"
@@ -373,5 +375,15 @@ case ":$PATH:" in
 esac
 # pnpm end
 
-export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+export SSL_CERT_FILE=/etc/ssl/certs/aspnetcore-dev-cert.crt
+export NODE_EXTRA_CA_CERTS=/home/richard/aspnetcore-dev-cert.crt
+export SSL_CERT_DIR=$HOME/.aspnet/dev-certs/trust:/usr/lib/ssl/certs
 
+export SRC_ENDPOINT="https://sourcegraph.com"
+export SRC_ACCESS_TOKEN="sgp_fd1b4edb60bf82b8_e80f78894aa5cf16b19d14b084472500f748b956"
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+export PATH="$HOME/.npm-global/bin:$PATH"
+export PATH="$PATH:/usr/local/bin"
+
+alias cursor="/mnt/c/Users/richa/AppData/Local/Programs/cursor/resources/app/bin/code"
