@@ -366,21 +366,10 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
-
-# pnpm
-export PNPM_HOME="/home/$USER/.local/share/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
-
 export SSL_CERT_FILE=/etc/ssl/certs/aspnetcore-dev-cert.crt
 export NODE_EXTRA_CA_CERTS=/home/richard/aspnetcore-dev-cert.crt
 export SSL_CERT_DIR=$HOME/.aspnet/dev-certs/trust:/usr/lib/ssl/certs
 
-export SRC_ENDPOINT="https://sourcegraph.com"
-export SRC_ACCESS_TOKEN="sgp_fd1b4edb60bf82b8_e80f78894aa5cf16b19d14b084472500f748b956"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
 export PATH="$HOME/.npm-global/bin:$PATH"
