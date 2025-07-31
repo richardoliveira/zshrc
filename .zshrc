@@ -366,9 +366,9 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
-export SSL_CERT_FILE=/etc/ssl/certs/aspnetcore-dev-cert.crt
-export NODE_EXTRA_CA_CERTS=/home/richard/aspnetcore-dev-cert.crt
-export SSL_CERT_DIR=$HOME/.aspnet/dev-certs/trust:/usr/lib/ssl/certs
+# export SSL_CERT_FILE=/etc/ssl/certs/aspnetcore-dev-cert.crt
+# export NODE_EXTRA_CA_CERTS=/home/richard/aspnetcore-dev-cert.crt
+# export SSL_CERT_DIR=$HOME/.aspnet/dev-certs/trust:/usr/lib/ssl/certs
 
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
